@@ -1,0 +1,277 @@
+name: Release
+
+# Cut a release by pushing a version tag:
+#   git tag v1.0.0 && git push origin v1.0.0
+#
+# CI builds everything that needs a machine you do not have: the Linux .deb, portable tarball
+# and AppImage on both x86_64 and aarch64, and the Windows .msi, and opens a DRAFT release with
+# them attached. The macOS .dmg, every PGP signature and the SHA256SUMS manifest are made on
+# Kevin's Mac and attached by hand, then the draft is published. RELEASING.md has the local half.
+#
+# This repository holds no secrets. The Developer ID certificate never reaches a hosted runner,
+# and neither does the PGP release key. The workflow triggers only on tag pushes.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  # One matrix, two architectures, one set of steps. jpackage cannot cross-compile, so each
+  # architecture needs its own native runner; ubuntu-24.04-arm runners are free on public repos.
+  linux:
+    name: deb + tarball + AppImage (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+            debarch: amd64
+            deb: CarrierPony-linux.deb
+            tarball: CarrierPony-linux-x86_64.tar.gz
+            appimage: CarrierPony-x86_64.AppImage
+            appimagetool: appimagetool-x86_64.AppImage
+            artifact: linux-x86_64
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+            debarch: arm64
+            deb: CarrierPony-linux-arm64.deb
+            tarball: CarrierPony-linux-aarch64.tar.gz
+            appimage: CarrierPony-aarch64.AppImage
+            appimagetool: appimagetool-aarch64.AppImage
+            artifact: linux-aarch64
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      # desktop-file-utils supplies desktop-file-validate, which appimagetool runs against the
+      # AppDir's .desktop and refuses to build without.
+      - run: sudo apt-get update && sudo apt-get install -y fakeroot desktop-file-utils
+
+      - name: Build deb and portable tarball
+        run: |
+          chmod +x gradlew
+          ./gradlew packageDeb createDistributable
+          cp build/compose/binaries/main/deb/carrierpony_*_${{ matrix.debarch }}.deb ${{ matrix.deb }}
+          # Wrap the tarball's launcher so it preloads the system libfreetype (the JVM's GTK
+          # file chooser draws blank otherwise). Done on a COPY, not the shared app image the
+          # AppImage below reuses; that one carries its own AppRun preload.
+          chmod +x tools/linux-wrap-launcher.sh
+          rm -rf tarball-src && cp -r build/compose/binaries/main/app tarball-src
+          tools/linux-wrap-launcher.sh tarball-src/CarrierPony
+          tar -czf ${{ matrix.tarball }} -C tarball-src CarrierPony
+
+      # jpackage writes its real error to a log file and Gradle only prints the path.
+      - name: jpackage logs on failure
+        if: failure()
+        run: |
+          for f in build/compose/logs/*/*.txt; do
+            echo "===== $f ====="
+            cat "$f"
+          done
+
+      # Wrap the .deb's launcher the same way: unpack, wrap, regenerate md5sums, repack with
+      # root ownership.
+      - name: Wrap the deb launcher
+        run: |
+          chmod +x tools/linux-wrap-launcher.sh
+          rm -rf debwrap && mkdir debwrap
+          dpkg-deb -R ${{ matrix.deb }} debwrap
+          launcher=$(find debwrap -type f -path '*/bin/CarrierPony')
+          approot=$(dirname "$(dirname "$launcher")")
+          echo "deb app root -> $approot"
+          tools/linux-wrap-launcher.sh "$approot"
+          if [ -f debwrap/DEBIAN/md5sums ]; then
+            ( cd debwrap && find . -type f ! -path './DEBIAN/*' -printf '%P\0' | xargs -0 md5sum > DEBIAN/md5sums )
+          fi
+          dpkg-deb --root-owner-group -b debwrap ${{ matrix.deb }}
+
+      - name: Verify the deb
+        run: |
+          rm -rf /tmp/debx && mkdir -p /tmp/debx
+          dpkg-deb -x ${{ matrix.deb }} /tmp/debx
+          wrapped=$(find /tmp/debx -type f -path '*/bin/CarrierPony')
+          head -n1 "$wrapped" | grep -q '^#!/bin/sh'
+          test -f "$(dirname "$wrapped")/CarrierPony.bin"
+          grep -rh '^Icon=' /tmp/debx --include=*.desktop
+
+      # The tarball has no installer to vouch for it, so it gets the checks the .deb gets for
+      # free, and the CLI is actually run out of the extracted tree: a release whose CLI is
+      # silently mute on one platform is the bug PGPony 1.0.0 shipped.
+      - name: Verify the portable tarball
+        run: |
+          rm -rf /tmp/tarcheck && mkdir -p /tmp/tarcheck
+          tar -xzf ${{ matrix.tarball }} -C /tmp/tarcheck
+          test -x /tmp/tarcheck/CarrierPony/bin/CarrierPony
+          head -n1 /tmp/tarcheck/CarrierPony/bin/CarrierPony | grep -q '^#!/bin/sh'
+          test -x /tmp/tarcheck/CarrierPony/bin/CarrierPony.bin
+          out=$(/tmp/tarcheck/CarrierPony/bin/CarrierPony version 2>&1)
+          echo "bin/CarrierPony version -> $out"
+          echo "$out" | grep -q 'CarrierPony Desktop'
+          /tmp/tarcheck/CarrierPony/bin/CarrierPony selftest
+
+      # AppRun and the .desktop are committed files copied in, never heredocs written inline: a
+      # YAML block scalar re-indents its content and a shebang with leading whitespace is not a
+      # shebang. --appimage-extract-and-run lets appimagetool work on a runner without FUSE.
+      - name: Build AppImage
+        run: |
+          APPDIR=CarrierPony.AppDir
+          rm -rf "$APPDIR"
+          mkdir -p "$APPDIR"
+          cp -r build/compose/binaries/main/app/CarrierPony/* "$APPDIR/"
+          cp packaging/appimage/AppRun "$APPDIR/AppRun"
+          chmod +x "$APPDIR/AppRun"
+          cp packaging/appimage/carrierpony.desktop "$APPDIR/carrierpony.desktop"
+          cp packaging/carrierpony.png "$APPDIR/carrierpony.png"
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/${{ matrix.appimagetool }}
+          chmod +x ${{ matrix.appimagetool }}
+          ARCH=${{ matrix.arch }} ./${{ matrix.appimagetool }} --appimage-extract-and-run "$APPDIR" ${{ matrix.appimage }}
+
+      - name: Verify the AppImage runs
+        run: |
+          chmod +x ${{ matrix.appimage }}
+          rm -rf squashfs-root
+          ./${{ matrix.appimage }} --appimage-extract > /dev/null
+          test -x squashfs-root/AppRun
+          out=$(./squashfs-root/AppRun version 2>&1)
+          echo "AppRun version -> $out"
+          echo "$out" | grep -q 'CarrierPony Desktop'
+          rm -rf squashfs-root
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.deb }}
+            ${{ matrix.tarball }}
+            ${{ matrix.appimage }}
+
+  windows:
+    name: msi (Windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Ensure WiX Toolset 3.x (jpackage needs candle.exe/light.exe)
+        shell: pwsh
+        run: |
+          if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
+            choco install wixtoolset -y --no-progress
+            $wix = Get-ChildItem 'C:\Program Files (x86)' -Filter 'WiX Toolset v3*' -Directory | Select-Object -Last 1
+            if ($wix) { Join-Path $wix.FullName 'bin' | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8 }
+          }
+
+      - name: Build msi
+        shell: pwsh
+        run: |
+          ./gradlew.bat packageMsi
+          Copy-Item build/compose/binaries/main/msi/CarrierPony-*.msi CarrierPony-windows.msi
+
+      - name: jpackage logs on failure
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-ChildItem build/compose/logs/packageMsi/*.txt -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "===== $($_.FullName) ====="
+            Get-Content $_.FullName
+          }
+
+      # Verified against the INSTALLED msi: packageMsi leaves no app image behind. Installing
+      # also makes this the clean-machine install the checklist otherwise never performs.
+      - name: Install the msi and verify it
+        shell: pwsh
+        run: |
+          $msi = (Resolve-Path CarrierPony-windows.msi).Path
+          Write-Host "installing $msi"
+          $p = Start-Process msiexec.exe -ArgumentList '/i', "`"$msi`"", '/qn', '/norestart' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "msiexec failed with exit code $($p.ExitCode)" }
+
+          $img = 'C:\Program Files\CarrierPony'
+          if (-not (Test-Path $img)) {
+            Get-ChildItem 'C:\Program Files' -Directory | Select-Object -ExpandProperty Name
+            throw "installed app not found at $img"
+          }
+
+          # Both launchers. carrierpony-cli.exe comes from --add-launcher through freeArgs, which
+          # degrades to a silent no-op if that property ever moves.
+          foreach ($exe in 'CarrierPony.exe', 'carrierpony-cli.exe') {
+            if (-not (Test-Path (Join-Path $img $exe))) { throw "launcher missing: $exe" }
+          }
+          Write-Host 'both launchers: present'
+
+          # The CLI actually PRINTS, and the crypto core runs on the bundled runtime.
+          $out = & (Join-Path $img 'carrierpony-cli.exe') version 2>&1 | Out-String
+          Write-Host "carrierpony-cli version -> '$($out.Trim())'"
+          if ($out -notmatch 'CarrierPony Desktop') { throw 'carrierpony-cli.exe printed nothing useful' }
+          & (Join-Path $img 'carrierpony-cli.exe') selftest
+          if ($LASTEXITCODE -ne 0) { throw "selftest failed with exit code $LASTEXITCODE" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: msi
+          path: CarrierPony-windows.msi
+
+  draft:
+    name: Open the draft release
+    needs: [linux, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect
+        run: |
+          mkdir -p dist
+          mv artifacts/linux-x86_64/CarrierPony-linux.deb dist/
+          mv artifacts/linux-x86_64/CarrierPony-linux-x86_64.tar.gz dist/
+          mv artifacts/linux-x86_64/CarrierPony-x86_64.AppImage dist/
+          mv artifacts/linux-aarch64/CarrierPony-linux-arm64.deb dist/
+          mv artifacts/linux-aarch64/CarrierPony-linux-aarch64.tar.gz dist/
+          mv artifacts/linux-aarch64/CarrierPony-aarch64.AppImage dist/
+          mv artifacts/msi/CarrierPony-windows.msi dist/
+          ls -l dist
+          sha256sum dist/*
+
+      # DRAFT, deliberately: a release published without the dmg, the signatures and SHA256SUMS
+      # is visible to anyone watching the repo. A stale draft for the same tag (a re-pushed tag
+      # after a CI fix) is cleared first; a published release is left alone.
+      - name: Clear any stale draft for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" \
+               --json isDraft --jq '.isDraft' 2>/dev/null | grep -qx true; then
+            echo "deleting stale draft for ${{ github.ref_name }}"
+            gh release delete "${{ github.ref_name }}" --repo "${{ github.repository }}" --yes
+          else
+            echo "no draft to clear"
+          fi
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            dist/CarrierPony-linux.deb \
+            dist/CarrierPony-linux-x86_64.tar.gz \
+            dist/CarrierPony-x86_64.AppImage \
+            dist/CarrierPony-linux-arm64.deb \
+            dist/CarrierPony-linux-aarch64.tar.gz \
+            dist/CarrierPony-aarch64.AppImage \
+            dist/CarrierPony-windows.msi \
+            --repo "${{ github.repository }}" \
+            --title "CarrierPony Desktop ${{ github.ref_name }}" \
+            --draft \
+            --generate-notes
+          echo "Draft created. Build and notarize the dmg, sign everything, attach, publish. See RELEASING.md."

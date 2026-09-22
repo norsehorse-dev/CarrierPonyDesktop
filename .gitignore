@@ -1,0 +1,34 @@
+build/
+.gradle/
+.kotlin/
+.idea/
+*.iml
+.DS_Store
+_to_delete/
+
+# Local working notes: not part of the published source.
+CLAUDE.md
+
+# The wrapper jar MUST be committed: CI runs ./gradlew and cannot bootstrap without it.
+!gradle/wrapper/gradle-wrapper.jar
+
+# Nothing secret belongs in this repo. Signing identities, notarization credentials and the PGP
+# release key come from the environment or CI secrets; these patterns are a backstop.
+local.properties
+keystore.properties
+*.p12
+*.jks
+*.keystore
+
+# Release artifacts and CI outputs pulled down for signing: never commit binaries.
+/ci-artifacts/
+/*.AppDir/
+/appimagetool-*.AppImage
+/squashfs-root/
+/CarrierPony-*.dmg
+/CarrierPony-*.deb
+/CarrierPony-*.msi
+/CarrierPony-*.tar.gz
+/CarrierPony-*.AppImage
+/SHA256SUMS
+/SHA256SUMS.asc

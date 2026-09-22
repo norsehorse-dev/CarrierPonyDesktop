@@ -1,0 +1,28 @@
+{
+  "current": {
+    "version": "1.0.0",
+    "released": "2026-09-25",
+    "tag": "v1.0.0",
+    "notes": "https://github.com/norsehorse-dev/CarrierPonyDesktop/releases/tag/v1.0.0",
+    "downloads": {
+      "macos_dmg": "https://github.com/norsehorse-dev/CarrierPonyDesktop/releases/download/v1.0.0/CarrierPony-macOS.dmg",
+      "windows_msi": "https://github.com/norsehorse-dev/CarrierPonyDesktop/releases/download/v1.0.0/CarrierPony-windows.msi",
+      "linux_deb": "https://github.com/norsehorse-dev/CarrierPonyDesktop/releases/download/v1.0.0/CarrierPony-linux.deb",
+      "linux_deb_arm64": "https://github.com/norsehorse-dev/CarrierPonyDesktop/releases/download/v1.0.0/CarrierPony-linux-arm64.deb",
+      "linux_tar_x86_64": "https://github.com/norsehorse-dev/CarrierPonyDesktop/releases/download/v1.0.0/CarrierPony-linux-x86_64.tar.gz",
+      "linux_tar_aarch64": "https://github.com/norsehorse-dev/CarrierPonyDesktop/releases/download/v1.0.0/CarrierPony-linux-aarch64.tar.gz",
+      "linux_appimage_x86_64": "https://github.com/norsehorse-dev/CarrierPonyDesktop/releases/download/v1.0.0/CarrierPony-x86_64.AppImage",
+      "linux_appimage_aarch64": "https://github.com/norsehorse-dev/CarrierPonyDesktop/releases/download/v1.0.0/CarrierPony-aarch64.AppImage"
+    },
+    "sha256": {
+      "CarrierPony-macOS.dmg": "",
+      "CarrierPony-windows.msi": "",
+      "CarrierPony-linux.deb": "",
+      "CarrierPony-linux-arm64.deb": "",
+      "CarrierPony-linux-x86_64.tar.gz": "",
+      "CarrierPony-linux-aarch64.tar.gz": "",
+      "CarrierPony-x86_64.AppImage": "",
+      "CarrierPony-aarch64.AppImage": ""
+    }
+  }
+}

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=CarrierPony
+Comment=Private OpenPGP messenger and file transfer
+Exec=CarrierPony
+Icon=carrierpony
+Categories=Network;InstantMessaging;
+Terminal=false

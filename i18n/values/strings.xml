@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  CarrierPony Desktop: the desktop-owned string layer (English base).
+  Only wording the Android app does not have belongs here. Anything Android already says is
+  looked up in vendor/app-strings/ (synced from CarrierPonyAndroid, never edited here).
+  A key declared in this file is owned by the desktop layer in every language; see Strings.kt.
+  Placeholders are java.util.Formatter syntax: %1$s, %1$d.
+-->
+<resources>
+
+    <!-- Gated screens -->
+    <string name="d_firstrun_title">Welcome to CarrierPony</string>
+    <string name="d_firstrun_body">Choose a launch passphrase. It protects your keys and messages on this computer, and you will type it each time the app opens. There is no recovery: if it is lost, the data here cannot be opened.</string>
+    <string name="d_launch_passphrase">Launch passphrase</string>
+    <string name="d_launch_passphrase_repeat">Repeat the passphrase</string>
+    <string name="d_working">Working…</string>
+    <string name="d_unlocking">Unlocking…</string>
+    <string name="d_identity_body">Your identity is a key pair made on this computer. The private key never leaves it.</string>
+    <string name="d_identity_create_instead">Create a new identity instead</string>
+    <string name="d_restore_one_device">Restoring moves this identity here. Until multi-device support ships, use it on one device at a time: two devices on one identity take sealed messages away from each other.</string>
+    <string name="d_backup_label">Backup text</string>
+    <string name="d_backup_save_file">Save to a file</string>
+
+    <!-- Tray -->
+    <string name="d_tray_open">Open CarrierPony</string>
+    <string name="d_tray_lock">Lock</string>
+    <string name="d_tray_quit">Quit</string>
+    <string name="d_tray_tooltip_unread">CarrierPony, %1$d unread</string>
+
+    <!-- Messages -->
+    <string name="d_messages_pick_title">Pick a conversation</string>
+    <string name="d_messages_pick_body">Choose a contact, group or channel on the left, or start a new one with the pencil.</string>
+    <string name="d_account_unnamed">Unnamed</string>
+    <string name="d_account_switch">Switch</string>
+    <string name="d_chat_on_lan">nearby</string>
+    <string name="d_chat_delete_conversation_body">Deletes every message in this conversation on this computer. The contact stays paired.</string>
+    <string name="d_channel_placeholder">Post to everyone subscribed</string>
+    <string name="d_channel_yours">Your channel, %1$d subscribed</string>
+    <string name="d_channel_new_body">You post, subscribers read. Share the channel invite afterwards, or pick contacts to subscribe now.</string>
+    <string name="d_group_new_body">Everyone you pick can post. Members must be contacts you have paired with.</string>
+    <string name="d_confirm_leave">Confirm</string>
+    <string name="d_you">you</string>
+
+    <!-- Pairing -->
+    <string name="d_pair_create_body">Create an invite and send it over a channel you already trust, or let them scan it from this screen.</string>
+    <string name="d_pair_in_person_hint">They are here and will scan this screen (pairs as verified)</string>
+    <string name="d_pair_enter_body">If someone sent you an invite, paste it here.</string>
+    <string name="d_pair_waiting_body">You can close this window; pairing finishes on its own once they accept.</string>
+
+    <!-- Files -->
+    <string name="d_files_save_downloads">Save to downloads folder</string>
+    <string name="d_files_save_as">Save as…</string>
+    <string name="d_files_open">Open</string>
+    <string name="d_files_gone">This file is no longer stored here.</string>
+    <string name="d_files_saved">Saved to %1$s as %2$s</string>
+    <string name="d_files_save_failed">Could not save: %1$s</string>
+    <string name="d_files_open_failed">Could not open: %1$s</string>
+    <string name="d_files_loading">Loading…</string>
+
+    <!-- Settings -->
+    <string name="d_settings_appearance">Appearance</string>
+    <string name="d_settings_theme">Theme</string>
+    <string name="d_theme_system">System</string>
+    <string name="d_theme_light">Light</string>
+    <string name="d_theme_dark">Dark</string>
+    <string name="d_settings_language_system">System (%1$s)</string>
+    <string name="d_settings_language_note">Takes effect right away. Messages and contact names are never translated.</string>
+    <string name="d_settings_notifications">Notifications and lock</string>
+    <string name="d_settings_notifications_sub">What the app does while you are not looking at it</string>
+    <string name="d_settings_notify">Notify me about new messages</string>
+    <string name="d_settings_notify_sender">Show who a message is from</string>
+    <string name="d_settings_notify_sender_sub">Off keeps names off a notification that can be read from across the room.</string>
+    <string name="d_settings_close_to_tray">Closing the window keeps CarrierPony running in the tray</string>
+    <string name="d_settings_launch_at_login">Start CarrierPony when I log in</string>
+    <string name="d_settings_launch_failed">Could not change the login item.</string>
+    <string name="d_settings_launch_unavailable">Start at login is available from the installed app, not from a development run.</string>
+    <string name="d_settings_lock_minutes">Lock after idle minutes</string>
+    <string name="d_settings_lock_note">0 never locks. Cmd+L or Ctrl+L locks right away.</string>
+    <string name="d_settings_downloads">Save received files to</string>
+    <string name="d_settings_downloads_choose">Choose…</string>
+    <string name="d_settings_open_folder">Open folder</string>
+    <string name="d_settings_downloads_note">Files stay encrypted inside the app until you save or open them.</string>
+    <string name="d_settings_lan_firewall">Turning this on opens a listening port, so macOS or Windows may ask to allow CarrierPony through the firewall.</string>
+    <string name="d_settings_lan_nearby">CarrierPony devices nearby</string>
+    <string name="d_settings_relay_note">A new relay takes effect the next time CarrierPony starts. You can only exchange messages with people whose app points at the same relay.</string>
+    <string name="d_settings_updates">Updates</string>
+    <string name="d_updates_idle">The update check has not run yet.</string>
+    <string name="d_updates_checking">Checking…</string>
+    <string name="d_updates_current">You have the latest version.</string>
+    <string name="d_updates_available">Version %1$s is available.</string>
+    <string name="d_updates_failed">Could not reach carrierpony.com. Try again later.</string>
+    <string name="d_updates_check_now">Check now</string>
+    <string name="d_updates_download">Download</string>
+    <string name="d_updates_auto">Check for updates once a day</string>
+    <string name="d_updates_note">Off by default. The check fetches one public file from carrierpony.com and sends nothing about you or this install.</string>
+    <string name="d_settings_about">About</string>
+    <string name="d_about_version">Version %1$s</string>
+    <string name="d_about_website">Website</string>
+    <string name="d_about_repo">Source on GitHub</string>
+    <string name="d_about_issues">Report a bug</string>
+    <string name="d_about_copyright">Copyright 2026 Kevin Stewart. Apache License 2.0.</string>
+    <string name="d_feedback_subject">CarrierPony for desktop, feedback</string>
+    <string name="d_status_open_failed">Could not open a browser. The address is on your clipboard: %1$s</string>
+
+
+    <!-- Controller messages -->
+    <string name="d_err_passphrase_short">Use at least %1$d characters.</string>
+    <string name="d_err_passphrase_mismatch">The two passphrases do not match.</string>
+    <string name="d_err_wrong_passphrase">Wrong passphrase.</string>
+    <string name="d_err_name_required">Enter a name. Your contacts will see it.</string>
+    <string name="d_someone">Someone</string>
+    <string name="d_notify_one">You have a new message.</string>
+    <string name="d_notify_many">You have %1$d new messages.</string>
+    <string name="d_notify_from_one">From %1$s</string>
+    <string name="d_notify_from_many">%1$d messages from %2$s</string>
+
+</resources>
