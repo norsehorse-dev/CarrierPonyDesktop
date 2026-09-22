@@ -15,6 +15,9 @@ class LaunchAtLogin(
     private val os: String = System.getProperty("os.name").lowercase(),
     /** The executable to launch. Null when not running from an install. */
     private val appPath: String? = System.getProperty("jpackage.app-path"),
+    /** Honoured on Linux the way XDG says; a parameter so a test is not at the mercy of the
+     *  environment (GitHub's Ubuntu runners set it, a Mac does not). */
+    private val xdgConfigHome: String? = System.getenv("XDG_CONFIG_HOME"),
     private val runRegistry: (List<String>) -> Int = { args ->
         runCatching { ProcessBuilder(listOf("reg") + args).redirectErrorStream(true).start().waitFor() }.getOrDefault(1)
     },
@@ -22,7 +25,7 @@ class LaunchAtLogin(
     val isSupported: Boolean get() = appPath != null && (os.contains("mac") || os.contains("win") || os.contains("nux"))
 
     private val plist: Path get() = home.resolve("Library/LaunchAgents/com.carrierpony.desktop.plist")
-    private val xdg: Path get() = (System.getenv("XDG_CONFIG_HOME")?.takeIf { it.isNotBlank() }?.let { Paths.get(it) } ?: home.resolve(".config")).resolve("autostart/carrierpony.desktop")
+    private val xdg: Path get() = (xdgConfigHome?.takeIf { it.isNotBlank() }?.let { Paths.get(it) } ?: home.resolve(".config")).resolve("autostart/carrierpony.desktop")
 
     fun isEnabled(): Boolean = when {
         os.contains("mac") -> Files.isRegularFile(plist)

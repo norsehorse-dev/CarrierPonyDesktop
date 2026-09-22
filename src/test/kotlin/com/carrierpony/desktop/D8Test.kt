@@ -159,7 +159,7 @@ class D8Test {
         assertTrue(plist.contains("<string>/Applications/CarrierPony.app/Contents/MacOS/CarrierPony</string>") && plist.contains("--hidden"))
         assertTrue(mac.setEnabled(false)); assertFalse(mac.isEnabled())
 
-        val linux = LaunchAtLogin(home, "linux", "/opt/carrierpony/bin/CarrierPony")
+        val linux = LaunchAtLogin(home, "linux", "/opt/carrierpony/bin/CarrierPony", xdgConfigHome = null)
         assertTrue(linux.setEnabled(true))
         assertTrue(String(Files.readAllBytes(home.resolve(".config/autostart/carrierpony.desktop"))).contains("Exec=\"/opt/carrierpony/bin/CarrierPony\" --hidden"))
 
